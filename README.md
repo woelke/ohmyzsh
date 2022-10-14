@@ -6,26 +6,25 @@ wget https://raw.githubusercontent.com/woelke/ohmyzsh/master/tools/install.sh
 sh install.sh
 ```
 
-Set upstream to ohmyzsh/ohmyzsh
+Get update from upstream
 ```sh
-cd ~/.oh-my-zsh
-git add remote upstream https://github.com/ohmyzsh/ohmyzsh
-git switch --create upstream
-git pull --set-upstream upstream
-git switch master
-```
-
-Get updates from upstream
-```sh
-git switch master
+git fetch --all
 git rebase upstream/master
 git push --force
 ```
 
-Update local repos
+Get submodule updates from upstream
+```sh
+git submodule foreach git pull origin master
+```
+
+Get update from origin
 ```sh
 git reset --hard origin/master
+git submodule update --init --recursive
 ```
+
+
 
 # Stuff from ohmyzsh
 
