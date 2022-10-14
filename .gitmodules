@@ -1,3 +1,6 @@
 [submodule "custom/plugins/zsh-aliases-lsd"]
 	path = custom/plugins/zsh-aliases-lsd
 	url = https://github.com/yuhonas/zsh-aliases-lsd
+[submodule "custom/plugins/zsh-autosuggestions"]
+	path = custom/plugins/zsh-autosuggestions
+	url = https://github.com/zsh-users/zsh-autosuggestions
