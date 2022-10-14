@@ -1,3 +1,34 @@
+# Notes to me
+
+Install me via
+```sh
+wget https://raw.githubusercontent.com/woelke/ohmyzsh/master/tools/install.sh
+sh install.sh
+```
+
+Set upstream to ohmyzsh/ohmyzsh
+```sh
+cd ~/.oh-my-zsh
+git add remote upstream https://github.com/ohmyzsh/ohmyzsh
+git switch --create upstream
+git pull --set-upstream upstream
+git switch master
+```
+
+Get updates from upstream
+```sh
+git switch master
+git rebase upstream/master
+git push --force
+```
+
+Update local repos
+```sh
+git reset --hard origin/master
+```
+
+# Stuff from ohmyzsh
+
 <p align="center"><img src="https://ohmyzsh.s3.amazonaws.com/omz-ansi-github.png" alt="Oh My Zsh"></p>
 
 Oh My Zsh is an open source, community-driven framework for managing your [zsh](https://www.zsh.org/)
