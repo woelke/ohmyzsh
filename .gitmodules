@@ -1,0 +1,3 @@
+[submodule "custom/plugins/zsh-aliases-lsd"]
+	path = custom/plugins/zsh-aliases-lsd
+	url = https://github.com/yuhonas/zsh-aliases-lsd
