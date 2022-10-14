@@ -39,7 +39,7 @@
 # or:
 #   sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
 #
-set -e
+set -eu -o pipefail
 
 # Make sure important variables exist if not already defined
 #
@@ -71,7 +71,7 @@ ZSH="${ZSH:-$HOME/.oh-my-zsh}"
 
 REPO=${REPO:-woelke/ohmyzsh}
 REMOTE=${REMOTE:-git@github.com:${REPO}.git}
-
+UPSTREAM="https://github.com/ohmyzsh/ohmyzsh"
 BRANCH=${BRANCH:-master}
 
 # Other options
@@ -195,24 +195,6 @@ supports_hyperlinks() {
   return 1
 }
 
-# Adapted from code and information by Anton Kochkov (@XVilka)
-# Source: https://gist.github.com/XVilka/8346728
-supports_truecolor() {
-  case "$COLORTERM" in
-  truecolor|24bit) return 0 ;;
-  esac
-
-  case "$TERM" in
-  iterm           |\
-  tmux-truecolor  |\
-  linux-truecolor |\
-  xterm-truecolor |\
-  screen-truecolor) return 0 ;;
-  esac
-
-  return 1
-}
-
 fmt_link() {
   # $1: text, $2: url, $3: fallback mode
   if supports_hyperlinks; then
@@ -236,50 +218,7 @@ fmt_code() {
 }
 
 fmt_error() {
-  printf '%sError: %s%s\n' "${FMT_BOLD}${FMT_RED}" "$*" "$FMT_RESET" >&2
-}
-
-setup_color() {
-  # Only use colors if connected to a terminal
-  if ! is_tty; then
-    FMT_RAINBOW=""
-    FMT_RED=""
-    FMT_GREEN=""
-    FMT_YELLOW=""
-    FMT_BLUE=""
-    FMT_BOLD=""
-    FMT_RESET=""
-    return
-  fi
-
-  if supports_truecolor; then
-    FMT_RAINBOW="
-      $(printf '\033[38;2;255;0;0m')
-      $(printf '\033[38;2;255;97;0m')
-      $(printf '\033[38;2;247;255;0m')
-      $(printf '\033[38;2;0;255;30m')
-      $(printf '\033[38;2;77;0;255m')
-      $(printf '\033[38;2;168;0;255m')
-      $(printf '\033[38;2;245;0;172m')
-    "
-  else
-    FMT_RAINBOW="
-      $(printf '\033[38;5;196m')
-      $(printf '\033[38;5;202m')
-      $(printf '\033[38;5;226m')
-      $(printf '\033[38;5;082m')
-      $(printf '\033[38;5;021m')
-      $(printf '\033[38;5;093m')
-      $(printf '\033[38;5;163m')
-    "
-  fi
-
-  FMT_RED=$(printf '\033[31m')
-  FMT_GREEN=$(printf '\033[32m')
-  FMT_YELLOW=$(printf '\033[33m')
-  FMT_BLUE=$(printf '\033[34m')
-  FMT_BOLD=$(printf '\033[1m')
-  FMT_RESET=$(printf '\033[0m')
+  printf '%sError: %s%s\n' "$*" >&2
 }
 
 setup_ohmyzsh() {
@@ -290,7 +229,7 @@ setup_ohmyzsh() {
   # precedence over umasks except for filesystems mounted with option "noacl".
   umask g-w,o-w
 
-  echo "${FMT_BLUE}Cloning Oh My Zsh...${FMT_RESET}"
+  echo "Cloning Oh My Zsh..."
 
   command_exists git || {
     fmt_error "git is not installed"
@@ -304,18 +243,13 @@ setup_ohmyzsh() {
     exit 1
   fi
 
-  # Manual clone with git config options to support git < v1.7.2
-  git init --quiet "$ZSH" && cd "$ZSH" \
+  git clone --recurse-submodules "$REMOTE" "$ZSH" && cd "$ZSH" \
   && git config core.eol lf \
   && git config core.autocrlf false \
   && git config fsck.zeroPaddedFilemode ignore \
   && git config fetch.fsck.zeroPaddedFilemode ignore \
   && git config receive.fsck.zeroPaddedFilemode ignore \
-  && git config oh-my-zsh.remote origin \
-  && git config oh-my-zsh.branch "$BRANCH" \
-  && git remote add origin "$REMOTE" \
-  && git fetch --depth=1 origin \
-  && git checkout -b "$BRANCH" "origin/$BRANCH" || {
+  && git remote add upstream "$UPSTREAM" || {
     [ ! -d "$ZSH" ] || {
       cd -
       rm -rf "$ZSH" 2>/dev/null
@@ -333,7 +267,7 @@ setup_zshrc() {
   # Keep most recent old .zshrc at .zshrc.pre-oh-my-zsh, and older ones
   # with datestamp of installation that moved them aside, so we never actually
   # destroy a user's original zshrc
-  echo "${FMT_BLUE}Looking for an existing zsh config...${FMT_RESET}"
+  echo "Looking for an existing zsh config..."
 
   # Must use this exact name so uninstall.sh can find it
   OLD_ZSHRC="$zdot/.zshrc.pre-oh-my-zsh"
@@ -408,16 +342,15 @@ setup_shell() {
   if ! command_exists chsh; then
     cat <<EOF
 I can't change your shell automatically because this system does not have chsh.
-${FMT_BLUE}Please manually change your default shell to zsh${FMT_RESET}
+Please manually change your default shell to zsh
 EOF
     return
   fi
 
-  echo "${FMT_BLUE}Time to change your default shell to zsh:${FMT_RESET}"
+  echo "Time to change your default shell to zsh:"
 
   # Prompt for user choice on changing the default login shell
-  printf '%sDo you want to change your default shell to zsh? [Y/n]%s ' \
-    "$FMT_YELLOW" "$FMT_RESET"
+  printf '%sDo you want to change your default shell to zsh? [Y/n]%s'
   read -r opt
   case $opt in
     [Yy]*|"") ;;
@@ -483,7 +416,7 @@ EOF
     fmt_error "chsh command unsuccessful. Change your default shell manually."
   else
     export SHELL="$zsh"
-    echo "${FMT_GREEN}Shell successfully changed to '$zsh'.${FMT_RESET}"
+    echo "Shell successfully changed to '$zsh'."
   fi
 
   echo
@@ -527,15 +460,13 @@ main() {
     shift
   done
 
-  setup_color
-
   if ! command_exists zsh; then
-    echo "${FMT_YELLOW}Zsh is not installed.${FMT_RESET} Please install zsh first."
+    echo "Zsh is not installed. Please install zsh first."
     exit 1
   fi
 
   if [ -d "$ZSH" ]; then
-    echo "${FMT_YELLOW}The \$ZSH folder already exists ($ZSH).${FMT_RESET}"
+    echo "The \$ZSH folder already exists ($ZSH)."
     if [ "$custom_zsh" = yes ]; then
       cat <<EOF
 
@@ -565,10 +496,8 @@ EOF
   setup_zshrc
   setup_shell
 
-  print_success
-
   if [ $RUNZSH = no ]; then
-    echo "${FMT_YELLOW}Run zsh to try it out.${FMT_RESET}"
+    echo "Run zsh to try it out."
     exit
   fi
 
